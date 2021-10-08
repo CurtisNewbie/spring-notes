@@ -38,7 +38,7 @@ SmartInstantiationAwareBeanPostProcessor
 
 首先看 `AbstractAutoProxyCreator` 对 `BeanPostProcessor.postProcessAfterInitialization` 方法的实现，本质上就是当当前 bean 能被 proxied 时，使用 `wrapIfNecessary` 方法。
 
-```
+```java
 public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
     if (bean != null) {
         Object cacheKey = getCacheKey(bean.getClass(), beanName);
@@ -57,7 +57,7 @@ public Object postProcessAfterInitialization(@Nullable Object bean, String beanN
 - `abstract Object[] getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, TargetSource customTargetSource) throws BeansException`
 - `Object createProxy(Class<?> beanClass, String beanName, Object[] specificInterceptors, TargetSource targetSource)`
 
-```
+```java
 protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
     if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
         return bean;
@@ -89,7 +89,7 @@ protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) 
 
 先看 `AbstractAdvisorAutoProxyCreator` 对 `getAdvicesAndAdvisorsForBean` 方法的实现，该实现说到底就是从 `BeanFactory` 里拿 `Advisor` 类型的 bean。
 
-```
+```java
 protected Object[] getAdvicesAndAdvisorsForBean(
         Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
 
@@ -103,7 +103,7 @@ protected Object[] getAdvicesAndAdvisorsForBean(
 
 继续往里走，进入 `findEligibleAdvisors` 方法, 这里关键的方法是 `findCandidateAdvisors` 方法。该方法查出所有的 advisor, 然后我们再判断哪些可用于该类。
 
-```
+```java
 protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
     List<Advisor> candidateAdvisors = findCandidateAdvisors();
     List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
@@ -117,7 +117,7 @@ protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName
 
 进入 `findCandidateAdvisors` 方法，我们可以看到这个方法是基于 `BeanFactoryAdvisorRetrievalHelper` 的，而其内部也是通过 `BeanFactory` 来查找 advisor 而已。
 
-```
+```java
 protected List<Advisor> findCandidateAdvisors() {
     Assert.state(this.advisorRetrievalHelper != null, "No BeanFactoryAdvisorRetrievalHelper available");
     return this.advisorRetrievalHelper.findAdvisorBeans();
@@ -154,13 +154,9 @@ public List<Advisor> findAdvisorBeans() {
                     if (rootCause instanceof BeanCurrentlyInCreationException) {
                         BeanCreationException bce = (BeanCreationException) rootCause;
                         String bceBeanName = bce.getBeanName();
-                        if (bceBeanName != null && this.beanFactory.isCurrentlyInCreation(bceBeanName)) {
-                            if (logger.isTraceEnabled()) {
-                                logger.trace("Skipping advisor '" + name +
-                                        "' with dependency on currently created bean: " + ex.getMessage());
-                            }
-                            // Ignore: indicates a reference back to the bean we're trying to advise.
-                            // We want to find advisors other than the currently created bean itself.
+                        if (bceBeanName != null 
+                                && this.beanFactory.isCurrentlyInCreation(bceBeanName)) {
+                            // ...
                             continue;
                         }
                     }
@@ -175,11 +171,9 @@ public List<Advisor> findAdvisorBeans() {
 
 那么除了这种类型的 advisor, 基于标签的是如何扫描且加入的呢。`AnnotationAwareAspectJAutoProxyCreator` 作为子类 overrides 了 `findCandidateAdvisors` 方法，加入了通过对 Class 使用反射查看是否存在 `@Aspect` 的方式发现的 advisor，在此子类，我们仍然会调用 `AbstractAdvisorAutoProxyCreator`, 所以以上对 `Advisor` 从 `BeanFactory` 中的查询仍有效。
 
-```
+```java
 protected List<Advisor> findCandidateAdvisors() {
-    // Add all the Spring advisors found according to superclass rules.
     List<Advisor> advisors = super.findCandidateAdvisors();
-    // Build Advisors for all AspectJ aspects in the bean factory.
     if (this.aspectJAdvisorsBuilder != null) {
         advisors.addAll(this.aspectJAdvisorsBuilder.buildAspectJAdvisors());
     }
@@ -189,7 +183,7 @@ protected List<Advisor> findCandidateAdvisors() {
 
 这里可以看出，对 annotation 的扫描是基于 `BeanFactoryAspectJAdvisorsBuilder` 的， 该方法核心在于，拿取所有 beanName, 拿取他们的 Class, 用反射查看是否带有 `@Aspect` 标签。 
 
-```
+```java
 public List<Advisor> buildAspectJAdvisors() {
     List<String> aspectNames = this.aspectBeanNames;
 
@@ -230,8 +224,10 @@ public List<Advisor> buildAspectJAdvisors() {
                         else {
                             // Per target or per this.
                             if (this.beanFactory.isSingleton(beanName)) {
-                                throw new IllegalArgumentException("Bean with name '" + beanName +
-                                        "' is a singleton, but aspect instantiation model is not singleton");
+                                throw new IllegalArgumentException("Bean with name '" + 
+                                        beanName +
+                                        "' is a singleton, but aspect instantiation model is" + 
+                                        " not singleton");
                             }
                             MetadataAwareAspectInstanceFactory factory =
                                     new PrototypeAspectInstanceFactory(this.beanFactory, beanName);
@@ -266,7 +262,7 @@ public List<Advisor> buildAspectJAdvisors() {
 
 主要看这里 `this.advisorFactory.isAspect(beanType)`, 进入该方法就能看到对 annotation 的判断：
 
-```
+```java
 public boolean isAspect(Class<?> clazz) {
 		return (hasAspectAnnotation(clazz) && !compiledByAjc(clazz));
 }
@@ -282,7 +278,7 @@ private boolean hasAspectAnnotation(Class<?> clazz) {
 
 接下来看对 Proxy 的创建，也就是 `AbstractAutoProxyCreator.createProxy` 方法。
 
-```
+```java
 protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
         @Nullable Object[] specificInterceptors, TargetSource targetSource) {
 
@@ -295,17 +291,13 @@ protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
     proxyFactory.copyFrom(this);
 
     if (proxyFactory.isProxyTargetClass()) {
-        // Explicit handling of JDK proxy targets (for introduction advice scenarios)
         if (Proxy.isProxyClass(beanClass)) {
-            // Must allow for introductions; can't just set interfaces to the proxy's 
-            // interfaces only.
             for (Class<?> ifc : beanClass.getInterfaces()) {
                 proxyFactory.addInterface(ifc);
             }
         }
     }
     else {
-        // No proxyTargetClass flag enforced, let's apply our default checks...
         if (shouldProxyTargetClass(beanClass, beanName)) {
             proxyFactory.setProxyTargetClass(true);
         }
@@ -336,7 +328,7 @@ protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
 
 实际上最关键的方法也就是最后一行 `proxyFactory.getProxy(classLoader)`，在该方法中，我们关注 `createAopProxy` 方法。
 
-```
+```java
 public Object getProxy(@Nullable ClassLoader classLoader) {
     return createAopProxy().getProxy(classLoader);
 }
@@ -351,7 +343,7 @@ protected final synchronized AopProxy createAopProxy() {
 
 这个 `createAopProxy` 方法由 `DefaultAopProxyFactory` 实现，实现代码如下。本质上就是选择使用 JDK Proxy 或者 CGLIB Proxy。然后这个 proxy 内部包含了 interceptor chain，调用的时候就会根据顺序触发该方法对应的 interceptors.
 
-```
+```java
 public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
     if (!NativeDetector.inNativeImage() &&
             (config.isOptimize() || config.isProxyTargetClass() 
