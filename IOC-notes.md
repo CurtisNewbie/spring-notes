@@ -95,9 +95,9 @@ AbstractAutowireCapableBeanFactory
 
 - AbstractAutowireCapableBeanFactory
 
-    - Creating beans 
-    - Populating beans' properties 
-    - Wiring 
+    - Creating beans
+    - Populating beans' properties
+    - wiring
     - Initializing (e.g., init method) 
     - 包含以下方法由子类实现，用于解析需要被注入的 bean
         - `Object resolveDependency(DependencyDescriptor descriptor, String requestingBeanName, Set<String> autowiredBeanNames, TypeConverter typeConverter)`
@@ -121,7 +121,6 @@ public interface BeanPostProcessor {
             throws BeansException {
 		return bean;
 	}
-
 	default Object postProcessAfterInitialization(Object bean, String beanName) 
             throws BeansException {
 		return bean;
@@ -134,8 +133,7 @@ public interface BeanPostProcessor {
 ```java
 public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
-	@Nullable
-	default Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) 
+	@Nullable default Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) 
             throws BeansException {
 		return null;
 	}
@@ -145,20 +143,11 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 		return true;
 	}
 
-	@Nullable
-	default PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
-			throws BeansException {
-
+	@Nullable default PropertyValues postProcessProperties(PropertyValues pvs, Object bean, 
+            String beanName) throws BeansException {
 		return null;
 	}
-
-	@Deprecated
-	@Nullable
-	default PropertyValues postProcessPropertyValues(PropertyValues pvs, PropertyDescriptor[] pds, 
-            Object bean, String beanName) throws BeansException {
-
-		return pvs;
-	}
+    // ...
 }
 ```
 
@@ -174,59 +163,31 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 @Override
 public void refresh() throws BeansException, IllegalStateException {
     synchronized (this.startupShutdownMonitor) {
-        // ... 
-
         // 1)
-        // Prepare this context for refreshing.
         prepareRefresh();
-
         // 2)
-        // Tell the subclass to refresh the internal bean factory.
         ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
-
         // 3)
-        // Prepare the bean factory for use in this context.
         prepareBeanFactory(beanFactory);
 
         try {
             // 4)
-            // Allows post-processing of the bean factory in context subclasses.
             postProcessBeanFactory(beanFactory);
-
-            // ...
-
             // 5)
-            // Invoke factory processors registered as beans in the context.
             invokeBeanFactoryPostProcessors(beanFactory);
-
             // 6)
-            // Register bean processors that intercept bean creation.
             registerBeanPostProcessors(beanFactory);
-
-            // ...
-
             // 7)
-            // Initialize message source for this context.
             initMessageSource();
-
             // 8)
-            // Initialize event multicaster for this context.
             initApplicationEventMulticaster();
-
             // 9)
-            // Initialize other special beans in specific context subclasses.
             onRefresh();
-
             // 10)
-            // Check for listener beans and register them.
             registerListeners();
-
             // 11)
-            // Instantiate all remaining (non-lazy-init) singletons.
             finishBeanFactoryInitialization(beanFactory);
-
             // 12)
-            // Last step: publish corresponding event.
             finishRefresh();
         }
         // ...
@@ -243,32 +204,17 @@ public void refresh() throws BeansException, IllegalStateException {
 ```java
 // AbstractApplicationContext.prepareRefresh()
 protected void prepareRefresh() {
-    // Switch to active.
     this.startupDate = System.currentTimeMillis();
     this.closed.set(false);
     this.active.set(true);
-
-    // ...
-
-    // Initialize any placeholder property sources in the context environment.
     initPropertySources();
-
-    // Validate that all properties marked as required are resolvable:
-    // see ConfigurablePropertyResolver#setRequiredProperties
     getEnvironment().validateRequiredProperties();
-
-    // Store pre-refresh ApplicationListeners...
     if (this.earlyApplicationListeners == null) {
         this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
-    }
-    else {
-        // Reset local application listeners to pre-refresh state.
+    } else {
         this.applicationListeners.clear();
         this.applicationListeners.addAll(this.earlyApplicationListeners);
     }
-
-    // Allow for the collection of early ApplicationEvents,
-    // to be published once the multicaster is available...
     this.earlyApplicationEvents = new LinkedHashSet<>();
 }
 ```
@@ -314,8 +260,7 @@ protected final void refreshBeanFactory() throws BeansException {
         customizeBeanFactory(beanFactory);
         loadBeanDefinitions(beanFactory);
         this.beanFactory = beanFactory;
-    }
-    catch (IOException ex) {
+    } catch (IOException ex) {
         throw new ApplicationContextException("I/O error parsing bean definition source for " + 
             getDisplayName(), ex);
     }
@@ -353,16 +298,13 @@ public AnnotationConfigApplicationContext(String... basePackages) {
 ```java
 // AnnotationConfigApplicationContext.scan(...)
 public void scan(String... basePackages) {
-    // ...
     // 1)
     this.scanner.scan(basePackages);
-    // ...
 }
 
 // ClassPathBeanDefinitionScanner.scan(...)
 public int scan(String... basePackages) {
     int beanCountAtScanStart = this.registry.getBeanDefinitionCount();
-
     // 2)
     doScan(basePackages);
 
@@ -375,10 +317,8 @@ public int scan(String... basePackages) {
 
 // ClassPathBeanDefinitionScanner.doScan(...)
 protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
-    // ...
     Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
     for (String basePackage : basePackages) {
-
         // 3) 
         Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
         for (BeanDefinition candidate : candidates) {
@@ -398,8 +338,7 @@ protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
                 definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(
                                         scopeMetadata, 
                                         definitionHolder, 
-                                        this.registry
-                                   );
+                                        this.registry);
                 beanDefinitions.add(definitionHolder);
                 registerBeanDefinition(definitionHolder, this.registry);
             }
@@ -416,8 +355,7 @@ protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
 public Set<BeanDefinition> findCandidateComponents(String basePackage) {
     if (this.componentsIndex != null && indexSupportsIncludeFilters()) {
         return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
-    }
-    else {
+    } else {
         // 4)
         return scanCandidateComponents(basePackage);
     }
@@ -430,9 +368,7 @@ private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
         String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
                 resolveBasePackage(basePackage) + '/' + this.resourcePattern;
         Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
-        // ...
         for (Resource resource : resources) {
-            // ...
             if (resource.isReadable()) {
                 try {
                     MetadataReader metadataReader = getMetadataReaderFactory()
@@ -444,19 +380,14 @@ private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
                             new ScannedGenericBeanDefinition(metadataReader);
                         sbd.setSource(resource);
                         if (isCandidateComponent(sbd)) {
-                            // ...
                             candidates.add(sbd);
                         }
-                        // ...
                     }
-                    // ...
-                }
-                catch (Throwable ex) {
+                } catch (Throwable ex) {
                     throw new BeanDefinitionStoreException(
                             "Failed to read candidate component class: " + resource, ex);
                 }
             }
-            // ...
         }
     }
     catch (IOException ex) {
@@ -497,22 +428,12 @@ protected void registerDefaultFilters() {
         this.includeFilters.add(new AnnotationTypeFilter(
                 ((Class<? extends Annotation>) ClassUtils.forName("javax.annotation.ManagedBean", cl)), 
                     false));
-        logger.trace("JSR-250 'javax.annotation.ManagedBean' found and supported for " + 
-            "component scanning");
-    }
-    catch (ClassNotFoundException ex) {
-        // JSR-250 1.1 API (as included in Java EE 6) not available - simply skip.
-    }
+    } catch (ClassNotFoundException ex) { }
     try {
         this.includeFilters.add(new AnnotationTypeFilter(
                 ((Class<? extends Annotation>) ClassUtils.forName("javax.inject.Named", cl)), 
                     false));
-        logger.trace("JSR-330 'javax.inject.Named' annotation found and supported for component " + 
-            "scanning");
-    }
-    catch (ClassNotFoundException ex) {
-        // JSR-330 API not available - simply skip.
-    }
+    } catch (ClassNotFoundException ex) { }
 }
 ```
 
@@ -589,7 +510,6 @@ BeanDefinitionRegistry.registerBeanDefinition(String beanName, BeanDefinition be
 ```java
 // AbstractApplicationContext.prepareBeanFactory(...) 
 protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
-    // Tell the internal bean factory to use the context's class loader etc.
     beanFactory.setBeanClassLoader(getClassLoader());
     if (!shouldIgnoreSpel) {
         beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(
@@ -621,12 +541,10 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
     // Detect a LoadTimeWeaver and prepare for weaving, if found.
     if (!NativeDetector.inNativeImage() && beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
         beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
-        // Set a temporary ClassLoader for type matching.
         beanFactory.setTempClassLoader(
             new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader())
         );
     }
-
     // Register default environment beans.
     if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
         beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
@@ -687,20 +605,12 @@ protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory b
     PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, 
             getBeanFactoryPostProcessors());
 
-    // Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
-    // (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
-    if (!IN_NATIVE_IMAGE && beanFactory.getTempClassLoader() == null 
-            && beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
-        beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
-        beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
-    }
+    // ...
 }
 
 // 2)
 for (BeanFactoryPostProcessor postProcessor : postProcessors) {
-    StartupStep postProcessBeanFactory = beanFactory.getApplicationStartup()
-            .start("spring.context.bean-factory.post-process")
-            .tag("postProcessor", postProcessor::toString);
+    // ...
     postProcessor.postProcessBeanFactory(beanFactory);
     postProcessBeanFactory.end();
 }
@@ -731,11 +641,9 @@ for (String ppName : postProcessorNames) {
         if (pp instanceof MergedBeanDefinitionPostProcessor) {
             internalPostProcessors.add(pp);
         }
-    }
-    else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+    } else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
         orderedPostProcessorNames.add(ppName);
-    }
-    else {
+    } else {
         nonOrderedPostProcessorNames.add(ppName);
     }
 }
@@ -792,18 +700,15 @@ onRefresh();
 ```java
 // AbstractApplicationContext.registerListeners()
 protected void registerListeners() {
-    // Register statically specified listeners first.
     for (ApplicationListener<?> listener : getApplicationListeners()) {
         getApplicationEventMulticaster().addApplicationListener(listener);
     }
-
     // Do not initialize FactoryBeans here: We need to leave all regular beans
     // uninitialized to let post-processors apply to them!
     String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
     for (String listenerBeanName : listenerBeanNames) {
         getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);
     }
-
     // Publish early application events now that we finally have a multicaster...
     Set<ApplicationEvent> earlyEventsToProcess = this.earlyApplicationEvents;
     this.earlyApplicationEvents = null;
@@ -828,43 +733,33 @@ protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory b
         beanFactory.setConversionService(
                 beanFactory.getBean(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class));
     }
-
     if (!beanFactory.hasEmbeddedValueResolver()) {
         beanFactory.addEmbeddedValueResolver(strVal -> getEnvironment().resolvePlaceholders(strVal));
     }
-
     // Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
     String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
     for (String weaverAwareName : weaverAwareNames) {
         getBean(weaverAwareName);
     }
-
     // Stop using the temporary ClassLoader for type matching.
     beanFactory.setTempClassLoader(null);
-
     // Allow for caching all bean definition metadata, not expecting further changes.
     beanFactory.freezeConfiguration();
 
+    // 0)
     // Instantiate all remaining (non-lazy-init) singletons.
     beanFactory.preInstantiateSingletons();
 }
 
 // DefaultListableBeanFactory.preInstantiateSingletons()
 public void preInstantiateSingletons() throws BeansException {
-    if (logger.isTraceEnabled()) {
-        logger.trace("Pre-instantiating singletons in " + this);
-    }
-
     // 1)
     List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
-
     // 2)
     for (String beanName : beanNames) {
         RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
-
         // 3)
         if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
-
             // 4)
             if (isFactoryBean(beanName)) {
                 Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
@@ -876,8 +771,7 @@ public void preInstantiateSingletons() throws BeansException {
                         isEagerInit = AccessController.doPrivileged(
                                 (PrivilegedAction<Boolean>) ((SmartFactoryBean<?>) factory)::isEagerInit,
                                 getAccessControlContext());
-                    }
-                    else {
+                    } else {
                         isEagerInit = (factory instanceof SmartFactoryBean &&
                                 ((SmartFactoryBean<?>) factory).isEagerInit());
                     }
@@ -885,14 +779,12 @@ public void preInstantiateSingletons() throws BeansException {
                         getBean(beanName);
                     }
                 }
-            }
-            // 5)
-            else {
+            } else {
+                // 5)
                 getBean(beanName);
             }
         }
     }
-    
     // ...
 }
 ```
@@ -923,15 +815,9 @@ protected <T> T doGetBean(
     // 2) 
     Object sharedInstance = getSingleton(beanName);
     if (sharedInstance != null && args == null) {
-        // ...
-
         // 3)
         beanInstance = getObjectForBeanInstance(sharedInstance, name, beanName, null);
-    }
-
-    else {
-        // Fail if we're already creating this bean instance:
-        // We're assumably within a circular reference.
+    } else {
         if (isPrototypeCurrentlyInCreation(beanName)) {
             throw new BeanCurrentlyInCreationException(beanName);
         }
@@ -944,15 +830,11 @@ protected <T> T doGetBean(
             if (parentBeanFactory instanceof AbstractBeanFactory) {
                 return ((AbstractBeanFactory) parentBeanFactory).doGetBean(
                         nameToLookup, requiredType, args, typeCheckOnly);
-            }
-            else if (args != null) {
-                // Delegation to parent with explicit args.
+            } else if (args != null) {
                 return (T) parentBeanFactory.getBean(nameToLookup, args);
             } else if (requiredType != null) {
-                // No args -> delegate to standard getBean method.
                 return parentBeanFactory.getBean(nameToLookup, requiredType);
-            }
-            else {
+            } else {
                 return (T) parentBeanFactory.getBean(nameToLookup);
             }
         }
@@ -961,7 +843,6 @@ protected <T> T doGetBean(
             markBeanAsCreated(beanName);
         }
 
-        // ...
         try {
             if (requiredType != null) {
                 beanCreation.tag("beanType", requiredType::toString);
@@ -981,8 +862,7 @@ protected <T> T doGetBean(
                     registerDependentBean(dep, beanName);
                     try {
                         getBean(dep);
-                    }
-                    catch (NoSuchBeanDefinitionException ex) {
+                    } catch (NoSuchBeanDefinitionException ex) {
                         throw new BeanCreationException(mbd.getResourceDescription(), beanName,
                                 "'" + beanName + "' depends on missing bean '" + dep + "'", ex);
                     }
@@ -996,16 +876,13 @@ protected <T> T doGetBean(
                     try {
                         // 7) 
                         return createBean(beanName, mbd, args);
-                    }
-                    catch (BeansException ex) {
+                    } catch (BeansException ex) {
                         destroySingleton(beanName);
                         throw ex;
                     }
                 });
                 beanInstance = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
-            }
-
-            else if (mbd.isPrototype()) {
+            } else if (mbd.isPrototype()) {
                 // It's a prototype -> create a new instance.
                 Object prototypeInstance = null;
                 try {
@@ -1016,9 +893,7 @@ protected <T> T doGetBean(
                     afterPrototypeCreation(beanName);
                 }
                 beanInstance = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
-            }
-
-            else {
+            } else {
                 String scopeName = mbd.getScope();
                 if (!StringUtils.hasLength(scopeName)) {
                     throw new IllegalStateException("No scope name defined for bean ´" + 
@@ -1042,22 +917,17 @@ protected <T> T doGetBean(
                         }
                     });
                     beanInstance = getObjectForBeanInstance(scopedInstance, name, beanName, mbd);
-                }
-                catch (IllegalStateException ex) {
+                } catch (IllegalStateException ex) {
                     throw new ScopeNotActiveException(beanName, scopeName, ex);
                 }
             }
-        }
-        catch (BeansException ex) {
-            // ...
+        } catch (BeansException ex) {
             cleanupAfterBeanCreationFailure(beanName);
             throw ex;
-        }
-        finally {
+        } finally {
             beanCreation.end();
         }
     }
-
     // 9)
     return adaptBeanInstance(name, beanInstance, requiredType);
 }
@@ -1074,7 +944,6 @@ protected String transformedBeanName(String name) {
 
 public String canonicalName(String name) {
     String canonicalName = name;
-    // Handle aliasing...
     String resolvedName;
     do {
         resolvedName = this.aliasMap.get(canonicalName);
@@ -1095,13 +964,11 @@ public Object getSingleton(String beanName) {
 }
 
 protected Object getSingleton(String beanName, boolean allowEarlyReference) {
-    // Quick check for existing instance without full singleton lock
     Object singletonObject = this.singletonObjects.get(beanName);
     if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
         singletonObject = this.earlySingletonObjects.get(beanName);
         if (singletonObject == null && allowEarlyReference) {
             synchronized (this.singletonObjects) {
-                // Consistent creation of early reference within full singleton lock
                 singletonObject = this.singletonObjects.get(beanName);
                 if (singletonObject == null) {
                     singletonObject = this.earlySingletonObjects.get(beanName);
@@ -1127,7 +994,6 @@ protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 protected Object getObjectForBeanInstance(
         Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
-    // Don't let calling code try to dereference the factory if the bean isn't a factory.
     if (BeanFactoryUtils.isFactoryDereference(name)) {
         if (beanInstance instanceof NullBean) {
             return beanInstance;
@@ -1148,12 +1014,10 @@ protected Object getObjectForBeanInstance(
     Object object = null;
     if (mbd != null) {
         mbd.isFactoryBean = true;
-    }
-    else {
+    } else {
         object = getCachedObjectForFactoryBean(beanName);
     }
     if (object == null) {
-        // Return bean instance from factory.
         FactoryBean<?> factory = (FactoryBean<?>) beanInstance;
         // Caches object obtained from FactoryBean if it is a singleton.
         if (mbd == null && containsBeanDefinition(beanName)) {
@@ -1171,19 +1035,15 @@ protected Object getObjectForBeanInstance(
 ```java
 BeanFactory parentBeanFactory = getParentBeanFactory();
 if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
-    // Not found -> check parent.
     String nameToLookup = originalBeanName(name);
     if (parentBeanFactory instanceof AbstractBeanFactory) {
         return ((AbstractBeanFactory) parentBeanFactory).doGetBean(
                 nameToLookup, requiredType, args, typeCheckOnly);
-    }
-    else if (args != null) {
+    } else if (args != null) {
         return (T) parentBeanFactory.getBean(nameToLookup, args);
-    }
-    else if (requiredType != null) {
+    } else if (requiredType != null) {
         return parentBeanFactory.getBean(nameToLookup, requiredType);
-    }
-    else {
+    } else {
         return (T) parentBeanFactory.getBean(nameToLookup);
     }
 }
@@ -1195,7 +1055,6 @@ if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 checkMergedBeanDefinition(mbd, beanName, args);
 
-// Guarantee initialization of beans that the current bean depends on.
 String[] dependsOn = mbd.getDependsOn();
 if (dependsOn != null) {
     for (String dep : dependsOn) {
@@ -1206,8 +1065,7 @@ if (dependsOn != null) {
         registerDependentBean(dep, beanName);
         try {
             getBean(dep);
-        }
-        catch (NoSuchBeanDefinitionException ex) {
+        } catch (NoSuchBeanDefinitionException ex) {
             throw new BeanCreationException(mbd.getResourceDescription(), beanName,
                     "'" + beanName + "' depends on missing bean '" + dep + "'", ex);
         }
@@ -1216,7 +1074,6 @@ if (dependsOn != null) {
 
 public void registerDependentBean(String beanName, String dependentBeanName) {
     String canonicalName = canonicalName(beanName);
-
     synchronized (this.dependentBeanMap) {
         Set<String> dependentBeans =
                 this.dependentBeanMap.computeIfAbsent(canonicalName, 
@@ -1225,7 +1082,6 @@ public void registerDependentBean(String beanName, String dependentBeanName) {
             return;
         }
     }
-
     synchronized (this.dependenciesForBeanMap) {
         Set<String> dependenciesForBean =
                 this.dependenciesForBeanMap.computeIfAbsent(dependentBeanName, 
@@ -1243,8 +1099,7 @@ if (mbd.isSingleton()) {
     sharedInstance = getSingleton(beanName, () -> {
         try {
             return createBean(beanName, mbd, args);
-        }
-        catch (BeansException ex) {
+        } catch (BeansException ex) {
             destroySingleton(beanName);
             throw ex;
         }
@@ -1267,14 +1122,12 @@ try {
         beforePrototypeCreation(beanName);
         try {
             return createBean(beanName, mbd, args);
-        }
-        finally {
+        } finally {
             afterPrototypeCreation(beanName);
         }
     });
     beanInstance = getObjectForBeanInstance(scopedInstance, name, beanName, mbd);
-}
-catch (IllegalStateException ex) {
+} catch (IllegalStateException ex) {
     throw new ScopeNotActiveException(beanName, scopeName, ex);
 }
 ```
@@ -1291,12 +1144,7 @@ catch (IllegalStateException ex) {
                 throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
             }
             return (T) convertedBean;
-        }
-        catch (TypeMismatchException ex) {
-            if (logger.isTraceEnabled()) {
-                logger.trace("Failed to convert bean '" + name + "' to required type '" +
-                        ClassUtils.getQualifiedName(requiredType) + "'", ex);
-            }
+        } catch (TypeMismatchException ex) {
             throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
         }
     }
@@ -1319,15 +1167,11 @@ protected abstract Object createBean(String beanName, RootBeanDefinition mbd, @N
 protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
         throws BeanCreationException {
 
-    if (logger.isTraceEnabled()) {
-        logger.trace("Creating instance of bean '" + beanName + "'");
-    }
     RootBeanDefinition mbdToUse = mbd;
 
     // 1)
     Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
     if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
-
         // 2)
         mbdToUse = new RootBeanDefinition(mbd);
         mbdToUse.setBeanClass(resolvedClass);
@@ -1336,12 +1180,10 @@ protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable O
     // Prepare method overrides.
     try {
         mbdToUse.prepareMethodOverrides();
-    }
-    catch (BeanDefinitionValidationException ex) {
+    } catch (BeanDefinitionValidationException ex) {
         throw new BeanDefinitionStoreException(mbdToUse.getResourceDescription(),
                 beanName, "Validation of method overrides failed", ex);
     }
-
     try {
         // 3)
         // Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
@@ -1349,24 +1191,17 @@ protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable O
         if (bean != null) {
             return bean;
         }
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
         throw new BeanCreationException(mbdToUse.getResourceDescription(), beanName,
                 "BeanPostProcessor before instantiation of bean failed", ex);
     }
-
     try {
         // 4)
         Object beanInstance = doCreateBean(beanName, mbdToUse, args);
-        if (logger.isTraceEnabled()) {
-            logger.trace("Finished creating instance of bean '" + beanName + "'");
-        }
         return beanInstance;
-    }
-    catch (BeanCreationException | ImplicitlyAppearedSingletonException ex) {
+    } catch (BeanCreationException | ImplicitlyAppearedSingletonException ex) {
         throw ex;
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
         throw new BeanCreationException(
                 mbdToUse.getResourceDescription(), 
                 beanName, "Unexpected exception during bean creation", ex);
@@ -1447,30 +1282,23 @@ protected Object doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable
     if (beanType != NullBean.class) {
         mbd.resolvedTargetType = beanType;
     }
-
     // Allow post-processors to modify the merged bean definition.
     synchronized (mbd.postProcessingLock) {
         if (!mbd.postProcessed) {
             try {
                 applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
-            }
-            catch (Throwable ex) {
+            } catch (Throwable ex) {
                 throw new BeanCreationException(mbd.getResourceDescription(), beanName,
                         "Post-processing of merged bean definition failed", ex);
             }
             mbd.postProcessed = true;
         }
     }
-
     // Eagerly cache singletons to be able to resolve circular references
     // even when triggered by lifecycle interfaces like BeanFactoryAware.
     boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
             isSingletonCurrentlyInCreation(beanName));
     if (earlySingletonExposure) {
-        if (logger.isTraceEnabled()) {
-            logger.trace("Eagerly caching bean '" + beanName +
-                    "' to allow for resolving potential circular references");
-        }
         addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
     }
 
@@ -1487,8 +1315,7 @@ protected Object doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable
         if (ex instanceof BeanCreationException 
                 && beanName.equals(((BeanCreationException) ex).getBeanName())) {
             throw (BeanCreationException) ex;
-        }
-        else {
+        } else {
             throw new BeanCreationException(
                 mbd.getResourceDescription(), beanName, "Initialization of bean failed", ex);
         }
@@ -1499,8 +1326,7 @@ protected Object doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable
         if (earlySingletonReference != null) {
             if (exposedObject == bean) {
                 exposedObject = earlySingletonReference;
-            }
-            else if (!this.allowRawInjectionDespiteWrapping && hasDependentBean(beanName)) {
+            } else if (!this.allowRawInjectionDespiteWrapping && hasDependentBean(beanName)) {
                 String[] dependentBeans = getDependentBeans(beanName);
                 Set<String> actualDependentBeans = new LinkedHashSet<>(dependentBeans.length);
                 for (String dependentBean : dependentBeans) {
@@ -1515,16 +1341,13 @@ protected Object doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable
             }
         }
     }
-
     // Register bean as disposable.
     try {
         registerDisposableBeanIfNecessary(beanName, bean, mbd);
-    }
-    catch (BeanDefinitionValidationException ex) {
+    } catch (BeanDefinitionValidationException ex) {
         throw new BeanCreationException(
                 mbd.getResourceDescription(), beanName, "Invalid destruction signature", ex);
     }
-
     return exposedObject;
 }
 ```
@@ -1548,8 +1371,7 @@ protected void populateBean(String beanName, RootBeanDefinition mbd, @Nullable B
             throw new BeanCreationException(
                     mbd.getResourceDescription(), beanName, 
                     "Cannot apply property values to null instance");
-        }
-        else {
+        } else {
             // Skip property population phase for null instance.
             return;
         }
@@ -1566,7 +1388,6 @@ protected void populateBean(String beanName, RootBeanDefinition mbd, @Nullable B
             }
         }
     }
-
     PropertyValues pvs = (mbd.hasPropertyValues() ? mbd.getPropertyValues() : null);
 
     // 2) 
@@ -1602,9 +1423,7 @@ protected void populateBean(String beanName, RootBeanDefinition mbd, @Nullable B
                 }
                 pvsToUse = bp.postProcessPropertyValues(pvs, filteredPds, 
                     bw.getWrappedInstance(), beanName);
-                if (pvsToUse == null) {
-                    return;
-                }
+                if (pvsToUse == null) { return; }
             }
             pvs = pvsToUse;
         }
@@ -1616,8 +1435,8 @@ protected void populateBean(String beanName, RootBeanDefinition mbd, @Nullable B
         checkDependencies(beanName, mbd, filteredPds, pvs);
     }
 
+    // 4)
     if (pvs != null) {
-        // 4)
         applyPropertyValues(beanName, mbd, bw, pvs);
     }
 }
@@ -1632,11 +1451,9 @@ public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, Str
     InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
     try {
         metadata.inject(bean, beanName, pvs);
-    }
-    catch (BeanCreationException ex) {
+    } catch (BeanCreationException ex) {
         throw ex;
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
         throw new BeanCreationException(beanName, "Injection of autowired dependencies failed", ex);
     }
     return pvs;
@@ -1656,8 +1473,7 @@ protected Object initializeBean(String beanName, Object bean, @Nullable RootBean
             invokeAwareMethods(beanName, bean);
             return null;
         }, getAccessControlContext());
-    }
-    else {
+    } else {
         // 1)
         invokeAwareMethods(beanName, bean);
     }
@@ -1671,8 +1487,7 @@ protected Object initializeBean(String beanName, Object bean, @Nullable RootBean
     try {
         // 3)
         invokeInitMethods(beanName, wrappedBean, mbd);
-    }
-    catch (Throwable ex) {
+    } catch (Throwable ex) {
         throw new BeanCreationException(
                 (mbd != null ? mbd.getResourceDescription() : null),
                 beanName, "Invocation of init method failed", ex);
@@ -1681,7 +1496,6 @@ protected Object initializeBean(String beanName, Object bean, @Nullable RootBean
         // 4)
         wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
     }
-
     return wrappedBean;
 }
 ```
@@ -1736,7 +1550,6 @@ protected void invokeInitMethods(String beanName, Object bean, @Nullable RootBea
     boolean isInitializingBean = (bean instanceof InitializingBean);
     if (isInitializingBean 
             && (mbd == null || !mbd.isExternallyManagedInitMethod("afterPropertiesSet"))) {
-        // ...
         if (System.getSecurityManager() != null) {
             try {
                 AccessController.doPrivileged((PrivilegedExceptionAction<Object>) () -> {
@@ -1747,12 +1560,10 @@ protected void invokeInitMethods(String beanName, Object bean, @Nullable RootBea
             catch (PrivilegedActionException pae) {
                 throw pae.getException();
             }
-        }
-        else {
+        } else {
             ((InitializingBean) bean).afterPropertiesSet();
         }
     }
-
     if (mbd != null && bean.getClass() != NullBean.class) {
         String initMethodName = mbd.getInitMethodName();
         if (StringUtils.hasLength(initMethodName) &&
