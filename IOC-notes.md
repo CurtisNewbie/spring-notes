@@ -385,13 +385,13 @@ private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
                     }
                 } catch (Throwable ex) {
                     throw new BeanDefinitionStoreException(
-                            "Failed to read candidate component class: " + resource, ex);
+                            "...");
                 }
             }
         }
     }
     catch (IOException ex) {
-        throw new BeanDefinitionStoreException("I/O failure during classpath scanning", ex);
+        throw new BeanDefinitionStoreException("...");
     }
     return candidates;
 }
@@ -896,15 +896,13 @@ protected <T> T doGetBean(
             } else {
                 String scopeName = mbd.getScope();
                 if (!StringUtils.hasLength(scopeName)) {
-                    throw new IllegalStateException("No scope name defined for bean ´" + 
-                        beanName + "'");
+                    throw new IllegalStateException("...");
                 }
 
                 // 8)
                 Scope scope = this.scopes.get(scopeName);
                 if (scope == null) {
-                    throw new IllegalStateException("No Scope registered for scope name '" + 
-                        scopeName + "'");
+                    throw new IllegalStateException("No Scope registered for ...");
                 }
                 try {
                     Object scopedInstance = scope.get(beanName, () -> {
