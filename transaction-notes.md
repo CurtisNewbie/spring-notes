@@ -500,7 +500,8 @@ protected Object invokeWithinTransaction(Method method, @Nullable Class<?> targe
 4. 如果捕获到异常, 我们判断是否需要回滚, 需要的话我们就回滚 (回忆 `@Transactional(noRollbackFor = ...)`), 不需要我们就提交并且-抛出异常
 5. 总是为当前线程恢复到旧的 `TransactionInfo` 状态
 6. 如果执行成功, 没有异常, 这里提交事务
-7. 已存在事务 (回想, 基于 Annotation 的并不会在这个位置找到事务, 应该是已经使用了编码式的事务管理, 所以才会进入这个分支) 或使用回调式的编码方式, 本质和上面相同
+7. 基于 CallbackPreferringPlatformTransactionManager 的编写方式, 跟上面本质上没有太大区别
+
 
 所以这里我们也可以总结为四个核心的方法:
 
